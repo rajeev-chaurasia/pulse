@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.pulse'
+version = '0.0.1-SNAPSHOT'
+
+// Configuration shared across ALL modules
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok:1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+}

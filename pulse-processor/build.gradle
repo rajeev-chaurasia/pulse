@@ -1,0 +1,12 @@
+plugins {
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+mainClassName = 'com.pulse.processor.MatchingJob'
+
+dependencies {
+    implementation project(':pulse-common')
+    implementation 'org.apache.flink:flink-streaming-java:1.17.1'
+    implementation 'org.apache.flink:flink-connector-kafka:3.0.1-1.17'
+}

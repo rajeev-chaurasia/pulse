@@ -1,0 +1,6 @@
+rootProject.name = 'pulse'
+
+include 'pulse-common'
+include 'pulse-ingestion'
+include 'pulse-processor'
+include 'pulse-dashboard'
