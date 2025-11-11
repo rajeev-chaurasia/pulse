@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------
+  # MESSAGING (Kafka + Zookeeper)
+  # ----------------------------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: pulse-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - pulse-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: pulse-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Listeners: Internal for Docker containers (29092), External for your Mac (9092)
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - pulse-network
+
+  # ----------------------------------------------------------------
+  # STREAM PROCESSING (Flink)
+  # ----------------------------------------------------------------
+  jobmanager:
+    image: flink:1.17-java11
+    container_name: pulse-jobmanager
+    ports:
+      - "8081:8081" # Flink Dashboard
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    networks:
+      - pulse-network
+
+  taskmanager:
+    image: flink:1.17-java11
+    container_name: pulse-taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    networks:
+      - pulse-network
+
+  # ----------------------------------------------------------------
+  # DATABASE (DynamoDB Local)
+  # ----------------------------------------------------------------
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: pulse-dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ."
+    ports:
+      - "8000:8000"
+    networks:
+      - pulse-network
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    container_name: pulse-dynamodb-admin
+    ports:
+      - "8001:8001" # GUI for DynamoDB
+    environment:
+      DYNAMO_ENDPOINT: "http://dynamodb-local:8000"
+      AWS_REGION: "us-west-2"
+    depends_on:
+      - dynamodb-local
+    networks:
+      - pulse-network
+
+networks:
+  pulse-network:
+    driver: bridge
