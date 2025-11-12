@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package com.pulse.grpc;
+
+option java_multiple_files = true;
+
+// We don't need a "Service" here because this is just a data object
+// that Flink will produce and Kafka will store.
+
+message MatchEvent {
+  string match_id = 1;  // Unique ID for the match
+  string user_a_id = 2; // The first user
+  string user_b_id = 3; // The second user
+  int64 timestamp = 4;  // When the match was detected
+}

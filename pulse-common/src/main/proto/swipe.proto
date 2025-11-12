@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package com.pulse.grpc;
+
+option java_multiple_files = true;
+
+service SwipeService {
+  // The function our Server will expose
+  rpc Swipe (SwipeRequest) returns (SwipeResponse);
+}
+
+message SwipeRequest {
+  string user_id = 1;   // The person swiping
+  string target_id = 2; // The person being swiped on
+  bool is_like = 3;     // True = LIKE, False = PASS
+  int64 timestamp = 4;  // When it happened (Unix Epoch)
+}
+
+message SwipeResponse {
+  bool success = 1;
+  string message = 2;
+}

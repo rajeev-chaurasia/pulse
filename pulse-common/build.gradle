@@ -1,7 +1,33 @@
 plugins {
     id 'java-library'
+    // plugin to compile .proto files
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 dependencies {
+    // The core Protobuf library
     implementation 'com.google.protobuf:protobuf-java:3.24.0'
+
+    // gRPC libraries
+    implementation 'io.grpc:grpc-protobuf:1.58.0'
+    implementation 'io.grpc:grpc-stub:1.58.0'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+}
+
+// This block configures the "Compiler"
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.24.0"
+    }
+    plugins {
+        // Add a plugin to generate gRPC specific code (Service Stubs)
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.58.0'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {} // Apply the gRPC plugin to all tasks
+        }
+    }
 }
