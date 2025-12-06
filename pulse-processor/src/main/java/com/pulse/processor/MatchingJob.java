@@ -1,6 +1,8 @@
 package com.pulse.processor;
 
+import com.pulse.processor.model.MatchEvent;
 import com.pulse.processor.model.SwipeEvent;
+import com.pulse.processor.utils.SwipeDeserializer;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
@@ -47,17 +49,11 @@ public class MatchingJob {
         // WatermarkStrategy.noWatermarks() means "Ignore time for now, just process fast"
         DataStream<SwipeEvent> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
 
-        // Log received swipes
-        stream.map(swipe -> {
-                    String message = String.format("Received Swipe from User %s -> %s (%s)",
-                            swipe.getUserId(),
-                            swipe.getTargetId(),
-                            swipe.isLike() ? "LIKE" : "PASS");
-                    LOG.info(message);
-                    return message;
-                })
-                .name("Log Swipes")
-                .print();
+        DataStream<MatchEvent> matches = stream
+                .keyBy(SwipeEvent::getPairKey)  // Groups A->B and B->A together
+                .process(new MatchFunction());
+
+        matches.print();
 
         // Flink is "Lazy". Nothing happens until you call execute().
         // It builds a "Plan" (DAG) and then sends it to the cluster.

@@ -1,4 +1,4 @@
-package com.pulse.processor;
+package com.pulse.processor.utils;
 
 import com.pulse.grpc.SwipeRequest;
 import com.pulse.processor.model.SwipeEvent;
