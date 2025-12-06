@@ -32,6 +32,31 @@ services:
       - pulse-network
 
   # ----------------------------------------------------------------
+  # INIT CONTAINER (One-time Setup)
+  # ----------------------------------------------------------------
+  init-kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # Block until Kafka is reachable
+      echo -e 'Waiting for Kafka to be ready...'
+      # Loop until Kafka is available (nc -z returns 0 when port is open)
+      while ! nc -z kafka 29092; do sleep 1; done
+      
+      echo -e 'Creating kafka topics...'
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic swipes --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic matches --replication-factor 1 --partitions 1
+      
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "
+    networks:
+      - pulse-network
+
+  # ----------------------------------------------------------------
   # STREAM PROCESSING (Flink)
   # ----------------------------------------------------------------
   jobmanager:

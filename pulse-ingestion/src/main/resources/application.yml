@@ -1,19 +1,19 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 grpc:
   server:
-    port: 9090
+    port: ${GRPC_SERVER_PORT:9090}
 
 spring:
   application:
     name: pulse-ingestion
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
       properties:
         acks: 1             # Leader only (Fast)
-        linger.ms: 10       # Wait 10ms to group messages together
+        linger.ms: 10       # Wait 10 ms to group messages together
         batch.size: 16384   # 16KB batches

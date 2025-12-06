@@ -6,7 +6,7 @@ plugins {
 
 dependencies {
     // The core Protobuf library
-    implementation 'com.google.protobuf:protobuf-java:3.24.0'
+    api 'com.google.protobuf:protobuf-java:3.24.0'
 
     // gRPC libraries
     implementation 'io.grpc:grpc-protobuf:1.58.0'

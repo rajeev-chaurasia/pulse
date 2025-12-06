@@ -3,10 +3,28 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-mainClassName = 'com.pulse.processor.MatchingJob'
+application {
+    mainClass.set('com.pulse.processor.MatchingJob')
+    // CRITICAL: These flags allow Flink to access low-level Java memory on Java 17+
+    applicationDefaultJvmArgs = [
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED"
+    ]
+}
 
 dependencies {
     implementation project(':pulse-common')
+
+    // Core Flink libraries
     implementation 'org.apache.flink:flink-streaming-java:1.17.1'
     implementation 'org.apache.flink:flink-connector-kafka:3.0.1-1.17'
+
+    // needed to run the job locally in IntelliJ/Gradle
+    implementation 'org.apache.flink:flink-clients:1.17.1'
+
+    // Logging with configurable levels
+    implementation 'ch.qos.logback:logback-classic:1.4.11'
 }

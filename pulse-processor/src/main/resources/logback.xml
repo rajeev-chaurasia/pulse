@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Console appender with cleaner pattern -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Reduce Kafka client verbosity -->
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="org.apache.kafka.clients.admin.AdminClientConfig" level="ERROR"/>
+    <logger name="org.apache.kafka.clients.consumer.ConsumerConfig" level="ERROR"/>
+    <logger name="org.apache.kafka.clients.producer.ProducerConfig" level="ERROR"/>
+
+    <!-- Reduce Flink internal logging -->
+    <logger name="org.apache.flink.runtime" level="INFO"/>
+    <logger name="org.apache.flink.runtime.taskexecutor" level="WARN"/>
+    <logger name="org.apache.flink.runtime.taskexecutor.slot" level="WARN"/>
+    <logger name="org.apache.flink.runtime.executiongraph" level="WARN"/>
+    <logger name="org.apache.flink.runtime.blob" level="WARN"/>
+    <logger name="org.apache.flink.runtime.state" level="WARN"/>
+    <logger name="org.apache.flink.runtime.io" level="WARN"/>
+    <logger name="org.apache.flink.runtime.security" level="WARN"/>
+    <logger name="org.apache.flink.runtime.rpc" level="WARN"/>
+    <logger name="org.apache.flink.runtime.highavailability" level="WARN"/>
+    <logger name="org.apache.flink.runtime.resourcemanager" level="WARN"/>
+    <logger name="org.apache.flink.runtime.dispatcher" level="WARN"/>
+    <logger name="org.apache.flink.runtime.jobmaster" level="WARN"/>
+    <logger name="org.apache.flink.runtime.checkpoint" level="WARN"/>
+    <logger name="org.apache.flink.streaming.runtime.tasks" level="WARN"/>
+    <logger name="org.apache.flink.connector.kafka" level="INFO"/>
+    <logger name="org.apache.flink.connector.base" level="WARN"/>
+
+    <!-- Akka is very verbose -->
+    <logger name="akka" level="WARN"/>
+
+    <!-- Our application logs at INFO -->
+    <logger name="com.pulse" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
+
