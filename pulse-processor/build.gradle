@@ -25,6 +25,9 @@ dependencies {
     // needed to run the job locally in IntelliJ/Gradle
     implementation 'org.apache.flink:flink-clients:1.17.1'
 
+    // JSON serialization for Kafka messages
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
     // Logging with configurable levels
     implementation 'ch.qos.logback:logback-classic:1.4.11'
 }

@@ -2,10 +2,13 @@ package com.pulse.processor;
 
 import com.pulse.processor.model.MatchEvent;
 import com.pulse.processor.model.SwipeEvent;
+import com.pulse.processor.utils.MatchSerializer;
 import com.pulse.processor.utils.SwipeDeserializer;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.time.Time;
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -18,6 +21,7 @@ public class MatchingJob {
     private static final Logger LOG = LoggerFactory.getLogger(MatchingJob.class);
     private static final String MATCHING_JOB_NAME = "Pulse Matching Job";
     private static final String SWIPES_TOPIC = "swipes";
+    private static final String MATCHES_TOPIC = "matches";
     private static final String PULSE_GROUP_ID = "pulse-group";
 
     public static void main(String[] args) throws Exception {
@@ -53,7 +57,14 @@ public class MatchingJob {
                 .keyBy(SwipeEvent::getPairKey)  // Groups A->B and B->A together
                 .process(new MatchFunction());
 
-        matches.print();
+        // SINK (Write Matches to Kafka)
+        KafkaSink<MatchEvent> sink = KafkaSink.<MatchEvent>builder()
+                .setBootstrapServers(kafkaBootstrapServers)
+                .setRecordSerializer(new MatchSerializer(MATCHES_TOPIC))
+                .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE) // Ensure no lost matches
+                .build();
+
+        matches.sinkTo(sink);
 
         // Flink is "Lazy". Nothing happens until you call execute().
         // It builds a "Plan" (DAG) and then sends it to the cluster.
