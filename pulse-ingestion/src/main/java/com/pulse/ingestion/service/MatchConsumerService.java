@@ -6,6 +6,7 @@ import com.pulse.ingestion.repository.TableInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -20,10 +21,12 @@ public class MatchConsumerService {
     private static final Logger log = LoggerFactory.getLogger(MatchConsumerService.class);
     private final DynamoDbClient dynamoDbClient;
     private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public MatchConsumerService(DynamoDbClient dynamoDbClient) {
+    public MatchConsumerService(DynamoDbClient dynamoDbClient, SimpMessagingTemplate messagingTemplate) {
         this.dynamoDbClient = dynamoDbClient;
         this.objectMapper = new ObjectMapper();
+        this.messagingTemplate = messagingTemplate;
     }
 
     // Listens to the 'matches' topic
@@ -42,12 +45,20 @@ public class MatchConsumerService {
 
             // Save for User A (so A can see B)
             saveToDynamo(userAId, userBId, matchId, timestamp);
-
             // Save for User B (so B can see A)
             saveToDynamo(userBId, userAId, matchId, timestamp);
 
             log.info("Match {} persisted to DynamoDB", matchId);
 
+            // Broadcast to UI - We convert the Protobuf object to a simple Map or JSON-friendly object
+            Map<String, Object> uiUpdate = new HashMap<>();
+            uiUpdate.put("userA", userAId);
+            uiUpdate.put("userB", userBId);
+            uiUpdate.put("matchId", matchId);
+            uiUpdate.put("timestamp", timestamp);
+
+            // Push to anyone subscribed to "/topic/matches"
+            messagingTemplate.convertAndSend("/topic/matches", uiUpdate);
         } catch (Exception e) {
             log.error("Failed to process match event: {}", new String(messageBytes), e);
         }
