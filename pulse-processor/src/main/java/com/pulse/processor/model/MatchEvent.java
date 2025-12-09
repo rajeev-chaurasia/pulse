@@ -1,5 +1,7 @@
 package com.pulse.processor.model;
 
+import lombok.Data;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
@@ -8,6 +10,7 @@ import java.util.Objects;
  * POJO representing a successful match between two users.
  * Used for Flink serialization - requires explicit getters/setters.
  */
+@Data
 public class MatchEvent implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -25,38 +28,6 @@ public class MatchEvent implements Serializable {
         this.matchId = matchId;
         this.userAId = userAId;
         this.userBId = userBId;
-        this.timestamp = timestamp;
-    }
-
-    public String getMatchId() {
-        return matchId;
-    }
-
-    public void setMatchId(String matchId) {
-        this.matchId = matchId;
-    }
-
-    public String getUserAId() {
-        return userAId;
-    }
-
-    public void setUserAId(String userAId) {
-        this.userAId = userAId;
-    }
-
-    public String getUserBId() {
-        return userBId;
-    }
-
-    public void setUserBId(String userBId) {
-        this.userBId = userBId;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 

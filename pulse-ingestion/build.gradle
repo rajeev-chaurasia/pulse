@@ -8,4 +8,15 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'net.devh:grpc-server-spring-boot-starter:2.15.0.RELEASE'
     implementation 'org.springframework.kafka:spring-kafka'
+
+    // JSON parsing for Kafka messages
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+    // DynamoDB - exclude apache client to avoid conflicts
+    implementation platform('software.amazon.awssdk:bom:2.21.1')
+    implementation('software.amazon.awssdk:dynamodb') {
+        exclude group: 'software.amazon.awssdk', module: 'apache-client'
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
+    implementation 'software.amazon.awssdk:url-connection-client'
 }

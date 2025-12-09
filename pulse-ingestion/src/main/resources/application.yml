@@ -17,3 +17,12 @@ spring:
         acks: 1             # Leader only (Fast)
         linger.ms: 10       # Wait 10 ms to group messages together
         batch.size: 16384   # 16KB batches
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      auto-offset-reset: earliest  # Read from beginning if no offset exists
+
+# DynamoDB Configuration
+dynamodb:
+  endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+
