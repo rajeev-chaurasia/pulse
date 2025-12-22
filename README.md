@@ -148,7 +148,7 @@ Source: Kafka Source -> ... switched from CREATED to RUNNING
 
 You should see:
 ```
-gRPC Server started, listening on address: *, port: 9090
+gRPC Server started, listening on address: *, port: 50051
 Table 'pulse_core' created successfully!
 ```
 
@@ -172,7 +172,7 @@ grpcurl -plaintext -d '{
   "target_id": "bob",
   "is_like": true,
   "timestamp": 1733600000
-}' localhost:9090 com.pulse.grpc.SwipeService/Swipe
+}' localhost:50051 com.pulse.grpc.SwipeService/Swipe
 
 # Send reciprocal swipe (Bob likes Alice) - triggers MATCH!
 grpcurl -plaintext -d '{
@@ -180,7 +180,7 @@ grpcurl -plaintext -d '{
   "target_id": "alice",
   "is_like": true,
   "timestamp": 1733600001
-}' localhost:9090 com.pulse.grpc.SwipeService/Swipe
+}' localhost:50051 com.pulse.grpc.SwipeService/Swipe
 ```
 
 **Expected output in Flink terminal:**
@@ -220,7 +220,7 @@ python flood.py
 
 **Expected Output:**
 ```
-🌊 UNLEASHING CHAOS on localhost:9090 with 20 threads...
+🌊 UNLEASHING CHAOS on localhost:50051 with 20 threads...
 🚀 Speed: 3500 swipes/sec | Total Swipes: 35000 | Expected Matches: 1200
 ```
 
@@ -235,7 +235,7 @@ python flood.py
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka broker address |
 | `FLINK_PARALLELISM` | `1` | Flink task parallelism |
 | `DYNAMODB_ENDPOINT` | `http://localhost:8000` | DynamoDB endpoint |
-| `GRPC_SERVER_PORT` | `9090` | gRPC server port |
+| `GRPC_SERVER_PORT` | `50051` | gRPC server port |
 | `SERVER_PORT` | `8080` | HTTP server port |
 
 ### Kafka Topics

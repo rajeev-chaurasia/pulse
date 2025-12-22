@@ -3,13 +3,13 @@ server:
 
 grpc:
   server:
-    port: ${GRPC_SERVER_PORT:9090}
+    port: ${GRPC_SERVER_PORT:50051}
 
 spring:
   application:
     name: pulse-ingestion
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:127.0.0.1:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer

@@ -8,7 +8,7 @@ import swipe_pb2
 import swipe_pb2_grpc
 
 # CONFIGURATION
-TARGET = 'localhost:9090'
+TARGET = 'localhost:50051'
 THREADS = 20              # More threads = More chaos
 DURATION = 60             # Run for 60 seconds
 POPULATION_SIZE = 1000    # How many active users in the system?
