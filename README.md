@@ -4,7 +4,7 @@
 
 > 🎯 **The Problem**: In dating/social apps, a "match" happens when User A likes User B AND User B likes User A. Checking this in a database for every swipe is too slow at scale (10ms+ per query). Pulse solves this by keeping pending likes in memory and detecting matches in <1ms.
 
-![Pulse Dashboard](https://github.com/user-attachments/assets/ee1c7198-a5eb-4bcc-b8c0-15305fb40cad)
+<img width="1512" height="739" alt="image" src="https://github.com/user-attachments/assets/bd48c61e-3dc8-42cd-943c-351a2e86bf11" />
 
 ---
 
