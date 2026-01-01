@@ -107,6 +107,3 @@ grpcurl -plaintext -d '{
 | SK | String | `MATCH#1733600000` | Sort key (timestamp) |
 | partner_id | String | `bob` | The other user in match |
 | match_id | String | `uuid-xxx` | Unique match identifier |
-
-## 📄 License
-Privately licensed.
