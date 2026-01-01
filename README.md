@@ -83,3 +83,30 @@ Environment variables can be tuned in `docker-compose.yml`:
 - `FLINK_PARALLELISM`: Controls Flink job scaling.
 - `KAFKA_BOOTSTRAP_SERVERS`: Kafka connectivity.
 
+## 📚 API Reference
+
+### gRPC Service
+Send swipes via gRPC to `localhost:50051`.
+
+```bash
+grpcurl -plaintext -d '{
+  "user_id": "alice",
+  "target_id": "bob",
+  "is_like": true,
+  "timestamp": 1733600000
+}' localhost:50051 com.pulse.grpc.SwipeService/Swipe
+```
+
+## 💾 Database Schema
+
+**DynamoDB Table:** `pulse_core`
+
+| Key | Type | Example | Description |
+|-----|------|---------|-------------|
+| PK | String | `USER#alice` | Partition key (user ID) |
+| SK | String | `MATCH#1733600000` | Sort key (timestamp) |
+| partner_id | String | `bob` | The other user in match |
+| match_id | String | `uuid-xxx` | Unique match identifier |
+
+## 📄 License
+Privately licensed.
