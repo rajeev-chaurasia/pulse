@@ -4,6 +4,12 @@ import uuid
 import random
 import threading
 from faker import Faker
+import sys
+import os
+
+# Add the generated protobuf code to the path
+sys.path.append(os.path.join(os.path.dirname(__file__), '../application-backend/pulse-ingestion/build/generated/source/proto/main/python'))
+
 import swipe_pb2
 import swipe_pb2_grpc
 
