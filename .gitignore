@@ -1,53 +1,29 @@
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### IntelliJ IDEA ###
+# IntelliJ
 .idea/
-*.iws
 *.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+*.iws
 
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
-.vscode/
-
-### Mac OS ###
+# Mac
 .DS_Store
+.AppleDouble
+.LSOverride
 
-### Environment ###
-.env
-.env.local
-!.env.example
-!.env.docker
+# Gradle
+.gradle/
+build/
+out/
+gradle/wrapper/gradle-wrapper.jar
 
-### Python ###
+# Python
 __pycache__/
 *.pyc
 
-### Frontend ###
+# Docker
+.env
+
+# Frontend
 node_modules/
 dist/
+.DS_Store
+*.log
+nohup.out

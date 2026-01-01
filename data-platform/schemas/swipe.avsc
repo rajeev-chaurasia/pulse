@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "SwipeEvent",
+  "namespace": "com.pulse.data.events",
+  "doc": "Schema for raw swipe events ingested from Kafka to Iceberg",
+  "fields": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "doc": "UUID of the user performing the swipe"
+    },
+    {
+      "name": "target_id",
+      "type": "string",
+      "doc": "UUID of the user being swiped on"
+    },
+    {
+      "name": "is_like",
+      "type": "boolean",
+      "doc": "True for LIKE, False for PASS"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Unix timestamp (ms) of the event"
+    },
+    {
+      "name": "ingest_time",
+      "type": ["null", "long"],
+      "default": null,
+      "doc": "Timestamp when the event landed in the Lakehouse"
+    }
+  ]
+}
