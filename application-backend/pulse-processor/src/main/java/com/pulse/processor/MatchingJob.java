@@ -16,59 +16,75 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Pulse Matching Job
+ * <p>
+ * Entry point for the Flink streaming data pipeline.
+ * Consumes 'SwipeEvent' objects from the 'swipes' Kafka topic, identifies
+ * mutual matches,
+ * and produces 'MatchEvent' objects to the 'matches' topic.
+ */
 public class MatchingJob {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MatchingJob.class);
-    private static final String MATCHING_JOB_NAME = "Pulse Matching Job";
-    private static final String SWIPES_TOPIC = "swipes";
-    private static final String MATCHES_TOPIC = "matches";
-    private static final String PULSE_GROUP_ID = "pulse-group";
+        private static final Logger LOG = LoggerFactory.getLogger(MatchingJob.class);
+        private static final String JOB_NAME = "Pulse Matching Engine";
 
-    public static void main(String[] args) throws Exception {
+        // Topics
+        private static final String TOPIC_SWIPES = "swipes";
+        private static final String TOPIC_MATCHES = "matches";
+        private static final String CONSUMER_GROUP_ID = "pulse-processor-group";
 
-        String kafkaBootstrapServers = System.getenv().getOrDefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092");
+        public static void main(String[] args) throws Exception {
 
-        // execution environment : context where stream runs
-        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+                // Configuration
+                final String kafkaBootstrapServers = System.getenv().getOrDefault("KAFKA_BOOTSTRAP_SERVERS",
+                                "127.0.0.1:9094");
+                final int parallelism = Integer.parseInt(System.getenv().getOrDefault("FLINK_PARALLELISM", "1"));
 
-        int parallelism = Integer.parseInt(System.getenv().getOrDefault("FLINK_PARALLELISM", "1"));
-        env.setParallelism(parallelism);
-        LOG.info("Flink parallelism set to: {}", parallelism);
+                // Initialize execution environment
+                final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+                env.setParallelism(parallelism);
 
-        env.setRestartStrategy(RestartStrategies.fixedDelayRestart(
-                3, // max retry attempts
-                Time.seconds(10) // delay between retries
-        ));
+                env.setRestartStrategy(RestartStrategies.fixedDelayRestart(
+                                3, // Max restart attempts
+                                Time.seconds(10) // Delay between restarts
+                ));
 
-        // define Kafka source
-        KafkaSource<SwipeEvent> source = KafkaSource.<SwipeEvent>builder()
-                .setBootstrapServers(kafkaBootstrapServers)
-                .setTopics(SWIPES_TOPIC)
-                .setGroupId(PULSE_GROUP_ID)
-                .setStartingOffsets(OffsetsInitializer.latest()) // Only read new data
-                .setValueOnlyDeserializer(new SwipeDeserializer()) // Use our translator
-                .build();
+                LOG.info("Initializing {} with Parallelism: {}", JOB_NAME, parallelism);
 
-        // Create the Data Stream
-        // WatermarkStrategy.noWatermarks() means "Ignore time for now, just process fast"
-        DataStream<SwipeEvent> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
+                // Kafka Source Configuration
+                KafkaSource<SwipeEvent> source = KafkaSource.<SwipeEvent>builder()
+                                .setBootstrapServers(kafkaBootstrapServers)
+                                .setTopics(TOPIC_SWIPES)
+                                .setGroupId(CONSUMER_GROUP_ID)
+                                .setStartingOffsets(OffsetsInitializer.latest())
+                                .setValueOnlyDeserializer(new SwipeDeserializer())
+                                .build();
 
-        DataStream<MatchEvent> matches = stream
-                .keyBy(SwipeEvent::getPairKey)  // Groups A->B and B->A together
-                .process(new MatchFunction());
+                // Build Data Stream
+                DataStream<SwipeEvent> inputStream = env.fromSource(
+                                source,
+                                WatermarkStrategy.noWatermarks(),
+                                "Kafka Source: " + TOPIC_SWIPES);
 
-        // SINK (Write Matches to Kafka)
-        KafkaSink<MatchEvent> sink = KafkaSink.<MatchEvent>builder()
-                .setBootstrapServers(kafkaBootstrapServers)
-                .setRecordSerializer(new MatchSerializer(MATCHES_TOPIC))
-                .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE) // Ensure no lost matches
-                .build();
+                // Processing Logic: Key by 'PairKey' to route mutual swipes to the same task
+                // slot
+                DataStream<MatchEvent> matchStream = inputStream
+                                .keyBy(SwipeEvent::getPairKey)
+                                .process(new MatchFunction())
+                                .name("Match Processor");
 
-        matches.sinkTo(sink);
+                // Kafka Sink Configuration
+                KafkaSink<MatchEvent> sink = KafkaSink.<MatchEvent>builder()
+                                .setBootstrapServers(kafkaBootstrapServers)
+                                .setRecordSerializer(new MatchSerializer(TOPIC_MATCHES))
+                                .setDeliveryGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                                .build();
 
-        // Flink is "Lazy". Nothing happens until you call execute().
-        // It builds a "Plan" (DAG) and then sends it to the cluster.
-        LOG.info("Pulse Engine is starting...");
-        env.execute(MATCHING_JOB_NAME);
-    }
+                // Output
+                matchStream.sinkTo(sink).name("Kafka Sink: " + TOPIC_MATCHES);
+
+                // Execute
+                env.execute(JOB_NAME);
+        }
 }

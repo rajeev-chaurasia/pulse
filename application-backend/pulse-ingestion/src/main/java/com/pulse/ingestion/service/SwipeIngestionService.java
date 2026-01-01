@@ -9,6 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 
+/**
+ * gRPC Service for Swipe Ingestion.
+ * Receives swipes from clients and publishes them to the Kafka 'swipes' topic.
+ */
 @GrpcService
 public class SwipeIngestionService extends SwipeServiceGrpc.SwipeServiceImplBase {
 
@@ -23,12 +27,16 @@ public class SwipeIngestionService extends SwipeServiceGrpc.SwipeServiceImplBase
 
     @Override
     public void swipe(SwipeRequest request, StreamObserver<SwipeResponse> responseObserver) {
-        // TODO: remove log before deployment
-        log.info("Received swipe: {} -> {} ({})",
-                request.getUserId(), request.getTargetId(), request.getIsLike() ? "LIKE" : "PASS");
 
-        // Key = user_id (ensures all swipes by one user go to the same partition)
-        // Value = request.toByteArray() (Raw Protobuf bytes)
+        // In production, debug logging should be conditional or removed for high
+        // throughput
+        if (log.isDebugEnabled()) {
+            log.debug("Processing swipe: {} -> {}", request.getUserId(), request.getTargetId());
+        }
+
+        // Publish to Kafka
+        // Key: user_id (ensures ordering per user)
+        // Value: Protobuf byte array
         kafkaTemplate.send(TOPIC, request.getUserId(), request.toByteArray());
 
         SwipeResponse response = SwipeResponse.newBuilder()
@@ -39,5 +47,4 @@ public class SwipeIngestionService extends SwipeServiceGrpc.SwipeServiceImplBase
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
-
 }
