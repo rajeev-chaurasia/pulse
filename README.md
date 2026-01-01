@@ -83,5 +83,3 @@ Environment variables can be tuned in `docker-compose.yml`:
 - `FLINK_PARALLELISM`: Controls Flink job scaling.
 - `KAFKA_BOOTSTRAP_SERVERS`: Kafka connectivity.
 
-## 📄 License
-Privately licensed.
