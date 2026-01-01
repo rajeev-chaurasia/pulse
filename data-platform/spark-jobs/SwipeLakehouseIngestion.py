@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, to_timestamp, broadcast
-from pyspark.sql.types import StructType, StructField, StringType, BooleanType, LongType
+from pyspark.sql.functions import udf, col, to_timestamp, broadcast, to_date
+from pyspark.sql.types import StructType, StructField, StringType, BooleanType, LongType, BinaryType
+import swipe_pb2
 
 # -------------------------------------------------------------------------
 # Schema Definition
@@ -47,31 +48,56 @@ def get_user_metadata(spark):
         ("user_456", "free", "US_NY"),
     ], ["user_id", "subscription_tier", "region"])
 
+def deserialize_swipe_bytes(payload):
+    """
+    Deserializes raw Protobuf bytes into a tuple matching swipe_schema.
+    Returns None if parsing fails.
+    """
+    if not payload:
+        return None
+    try:
+        req = swipe_pb2.SwipeRequest()
+        req.ParseFromString(payload)
+        return (req.user_id, req.target_id, req.is_like, req.timestamp)
+    except Exception as e:
+        # In a real pipe, might want to output to a DLQ
+        return None
+
 def ingest_stream(spark):
     """
     Reads from Kafka 'swipes' topic, enriches data, and writes to Iceberg.
     """
+    # Determine Kafka bootstrap servers based on environment
+    if ENV == "LOCAL":
+        kafka_bootstrap_servers = "127.0.0.1:9094"
+    else:
+        kafka_bootstrap_servers = "localhost:9092"
+
+    # Register UDF
+    deserialize_udf = udf(deserialize_swipe_bytes, swipe_schema)
+
     # 1. Read Stream from Kafka
     # Using 'readStream' for continuous ingestion
     raw_stream = spark.readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
+        .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
         .option("subscribe", "swipes") \
         .option("startingOffsets", "earliest") \
         .option("failOnDataLoss", "false") \
         .load()
 
     # 2. Transform & Normalize
-    # Parse JSON value and cast timestamp for time-partitioning
+    # Parse Protobuf bytes and cast timestamp for time-partitioning
     parsed_stream = raw_stream.select(
-        from_json(col("value").cast("string"), swipe_schema).alias("data"),
+        deserialize_udf(col("value")).alias("data"),
         col("timestamp").alias("kafka_ingest_time")
     ).select(
         col("data.user_id"),
         col("data.target_id"),
         col("data.is_like"),
         col("data.timestamp").alias("event_timestamp"),
-        to_timestamp(col("kafka_ingest_time") / 1000).alias("ingest_time")
+        col("kafka_ingest_time").alias("ingest_time"),
+        to_date(col("kafka_ingest_time")).alias("ingest_date")
     )
 
     # 3. Enrichment (Resume Point: "Enrich raw event streams with user metadata")
@@ -85,11 +111,40 @@ def ingest_stream(spark):
     )
 
     # 4. Write Stream to Apache Iceberg
+    # Ensure Table Exists
+    spark.sql("CREATE DATABASE IF NOT EXISTS pulse_lake.raw")
+    
+    # In LOCAL mode, drop the table to ensure fresh schema (resolves "Field not found" errors)
+    if ENV == "LOCAL":
+        print("🔧 LOCAL mode: Dropping existing table to enforce new schema...")
+        spark.sql("DROP TABLE IF EXISTS pulse_lake.raw.swipes_cdc")
+        
+        # Clean up checkpoints to ensure fresh start in LOCAL mode
+        if os.path.exists(CHECKPOINT_PATH):
+            import shutil
+            shutil.rmtree(CHECKPOINT_PATH)
+            print(f"🧹 Removed checkpoint directory: {CHECKPOINT_PATH}")
+
+    spark.sql("""
+        CREATE TABLE IF NOT EXISTS pulse_lake.raw.swipes_cdc (
+            user_id STRING,
+            target_id STRING,
+            is_like BOOLEAN,
+            event_timestamp LONG,
+            ingest_time TIMESTAMP,
+            ingest_date DATE,
+            subscription_tier STRING,
+            region STRING
+        )
+        USING iceberg
+        PARTITIONED BY (ingest_date, region)
+    """)
+
     # Resume Point: "Ensuring exactly-once delivery semantics" via checkpointing
     query = enriched_stream.writeStream \
         .format("iceberg") \
         .outputMode("append") \
-        .trigger(processingTime="30 seconds") \
+        .trigger(processingTime="5 seconds") \
         .option("path", "pulse_lake.raw.swipes_cdc") \
         .option("fanout-enabled", "true") \
         .option("checkpointLocation", CHECKPOINT_PATH) \

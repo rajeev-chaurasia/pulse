@@ -1,78 +1,87 @@
-# Pulse: High-Frequency Trading & Data Platform
+# Pulse Engine
 
-![Architecture Diagram](https://github.com/user-attachments/assets/bd48c61e-3dc8-42cd-943c-351a2e86bf11)
+![Status](https://img.shields.io/badge/Status-Active-success)
+![Java](https://img.shields.io/badge/Java-17-orange)
+![Flink](https://img.shields.io/badge/Apache_Flink-1.18-d71e00)
+![Kafka](https://img.shields.io/badge/Apache_Kafka-3.6-black)
+![React](https://img.shields.io/badge/React-18-blue)
 
-## 🏗 Architecture Overview
+**Pulse** is a high-frequency, real-time matching engine designed to process high-throughput user interactions with low latency. It leverages event-driven architecture to ingest millions of events, process them statefully, and deliver instant feedback to clients.
 
-Pulse is a distributed, high-performance platform designed to solve the "Double Opt-In" matching problem at massive scale. It unifies a low-latency real-time engine with a horizontally scalable data lakehouse to support both instant user interactions and deep historical analytics.
+## 🏗 Architecture
 
-The system is composed of two core subsystems:
+Pulse adopts a modern, decoupled microservices architecture:
 
-### 1. [Application Backend](/application-backend) (Online System)
-**Goal:** Low-latency ingestion and stateful matching.
-- **Tech Stack:** Java 17, Spring Boot, Apache Flink, Apache Kafka, DynamoDB.
-- **Performance:** Processes 10,000+ swipe events per second with <5ms matching latency.
-- **Key Mechanics:**
-    - **gRPC Ingestion:** High-throughput entry point for mobile clients.
-    - **Flink Stateful Processing:** In-memory matching logic avoiding DB bottlenecks.
-    - **DynamoDB Persistence:** Durable storage for successful matches.
-    - **Real-Time Dashboard:** WebSocket-based telemetry for system observability.
+```mermaid
+graph LR
+    Client(Web/Mobile Client) -->|gRPC/Proto| Ingestion[Ingestion Service]
+    Ingestion -->|Writes| KafkaSwipes[(Kafka: swipes)]
+    KafkaSwipes -->|Consumes| Flink[Flink Processor]
+    Flink -->|Stateful Match Logic| Flink
+    Flink -->|Writes| KafkaMatches[(Kafka: matches)]
+    KafkaMatches -->|Consumes| Ingestion
+    Ingestion -->|WebSocket| Client
+    Ingestion -->|Persist| DynamoDB[(DynamoDB)]
+```
 
-👉 **[Explore the Application Backend Code](/application-backend)**
+## 🚀 Tech Stack
 
----
+- **Core Backend**: Java 17, Spring Boot 3
+- **Stream Processing**: Apache Flink 1.18
+- **Messaging**: Apache Kafka (Confluent Platform)
+- **Protocol**: gRPC (Ingestion), WebSockets (Real-time updates)
+- **Frontend**: React, Vite (Dashboard)
+- **Infrastructure**: Docker, Docker Compose
 
-### 2. [Data Platform](/data-platform) (Offline / Nearline System)
-**Goal:** Lambda Architecture for historical analysis, ML training, and exact-once audits.
-- **Tech Stack:** Apache Spark 3.5, Apache Iceberg, AWS S3, Python.
-- **Pipeline:**
-    - **Ingestion:** Spark Structured Streaming reads raw events from Kafka `swipes` topic.
-    - **Storage:** Writes to **Apache Iceberg** tables on S3 with Schema Evolution support.
-    - **Optimization:** Z-Order clustering and time-based partitioning for fast query performance.
-- **Use Cases:**
-    - **Data Lakehouse:** Unified storage for "Time Travel" queries.
-    - **Machine Learning:** Feature engineering for recommendation algorithms.
+## ⚡️ Quick Start
 
-👉 **[Explore the Data Platform Code](/data-platform)**
+### Prerequisites
+- Docker & Docker Compose
+- Java 17+ (for local development)
+- Python 3.9+ (for load testing)
 
----
-
-## 🚀 Deployment Strategy
-
-### Application Layer
-The application layer runs on a containerized infrastructure orchestrated via Docker Compose (local) or Kubernetes (production).
+### Run the Engine
+We provide a unified startup script that handles build, infrastructure initialization, and service orchestration.
 
 ```bash
-cd application-backend
-docker-compose up -d
-./gradlew :pulse-processor:run
+./scripts/start_dev.sh
 ```
 
-### Data Layer
-The data platform jobs are submitted to a Spark Cluster (EMR / Databricks) or run locally for testing.
+This will:
+1. Clean up existing containers and artifacts.
+2. Build the backend services and Flink jobs.
+3. Start Kafka, Zookeeper, Flink Cluster, and DynamoDB.
+4. Launch the Ingestion Service and Dashboard.
+
+**Access Points:**
+- **Dashboard**: [http://localhost:3000](http://localhost:3000)
+- **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)
+- **API (gRPC)**: `localhost:50051`
+
+### Load Testing
+To simulate high-concurrency traffic:
 
 ```bash
-cd data-platform/spark-jobs
-spark-submit \
-  --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.4.2 \
-  SwipeLakehouseIngestion.py
+python3 scripts/load_test.py
 ```
 
----
+## 🛠 Development
 
-## 🛠 Project Structure
+### Project Structure
+```
+pulse/
+├── application-backend/      # Core services
+│   ├── pulse-ingestion/      # Spring Boot gRPC + WebSocket Service
+│   ├── pulse-processor/      # Flink Job
+│   └── pulse-dashboard/      # React Frontend
+├── scripts/                  # Operational scripts
+└── docker-compose.yml        # Infrastructure definition
+```
 
-```
-Pulse/
-├── application-backend/       # ORIGINAL: Real-time Matching Engine
-│   ├── src/                   # Spring Boot & Flink Source Code
-│   ├── docker-compose.yml     # Infrastructure (Kafka, Zookeeper)
-│   └── flood.py               # Load Generator
-│
-├── data-platform/             # NEW: Data Lakehouse & Spark Pipelines
-│   ├── spark-jobs/            # Spark Structured Streaming Jobs
-│   ├── iceberg-configs/       # Catalog & S3 Configurations
-│   └── schemas/               # Avro/JSON Schemas
-│
-└── README.md                  # Implementation Guide
-```
+### Configuration
+Environment variables can be tuned in `docker-compose.yml`:
+- `FLINK_PARALLELISM`: Controls Flink job scaling.
+- `KAFKA_BOOTSTRAP_SERVERS`: Kafka connectivity.
+
+## 📄 License
+Privately licensed.
